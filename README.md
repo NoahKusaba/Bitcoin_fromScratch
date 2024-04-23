@@ -11,11 +11,11 @@ Currently this repository is capable of:
 
 
 
-Future Goals:
+#Future Goals:
     - Allow for mining
     - Allow for hosting blockchain. 
 
-References:
+#References:
     - General: 
         - Programming Bitcoin by Jimmy Song
             - Repot: https://github.com/jimmysong/programmingbitcoin
