@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Union
 from hashlib import sha256
+from transaction.digital_signiture import  sign
 """
 - Transactions on Bitcoin:
     - One source wallet:
@@ -53,6 +54,10 @@ class Script:
 class TxIn: 
     prev_tx: bytes # previous trx id, hash 256 of trx contents
     prev_index: int # UTXO output index in the transaction
+    secret_key: int # secret key of soure wallet
+    public_key_hash : str
+    public_key_bytes : bytes
+    prev_tx_script_pubkey: Script
     script_sig: Script = None # unlocking script, Script class coming a bit later below
     sequence: int = 0xffffffff # originally intended for "high frequency trades", with locktime
 
@@ -79,6 +84,7 @@ class TxIn:
 @dataclass
 class TxOut:
     amount:int
+    public_key_hash : str
     script_pubkey: Script = None
     def encode(self):
         out = []
@@ -121,4 +127,24 @@ class Tx:
         out += [encode_int(1, 4) if sig_index != -1 else b''] # 1 = SIGHASH_ALL
         return b''.join(out)
     
-    def id(self): return sha256(sha256(self.encode()).digest()).digest()[::-1].hex() 
+    def id(self): return sha256(sha256(self.encode()).digest()).digest()[::-1].hex()
+
+
+    def generate_encoding(self) :
+        # See https://en.bitcoin.it/wiki/Transaction for encoding rules. 
+        
+        for tx_in in self.tx_ins:
+            tx_in.script_pubkey = Script([118, 169, tx_in.public_key_hash, 136, 172 ])
+
+        for tx_out in self.tx_outs:
+            tx_out.script_pubkey = Script([118, 169, tx_out.public_key_hash, 136, 172 ])
+        
+        message= self.encode(sig_index = 0 )
+
+        for tx_in in self.tx_ins:
+
+            sig = sign(tx_in.secret_key, message)
+            sig_bytes_and_type = sig.encode() + b'\x01'
+            tx_in.script_sig = Script([sig_bytes_and_type, tx_in.public_key_bytes])
+
+        return self.encode().hex()

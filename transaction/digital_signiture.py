@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 """
     - Generating valide signitures for transactions & Signing
-         - Alot of this stuff is pretty arbitrary. 
+         - This stuff is defined by bitcoin specifications.
 
 """
 
@@ -33,11 +33,18 @@ class Signature:
 
 
 def sign(secret_key: int, message: bytes) -> Signature:
-    random.seed(int.from_bytes(sha256(message).digest(), 'big')) # see note below
+    """
+        - Method to sign transaction with private key to prove you are the owner of source wallet.
+            - ECDSA specifications described in Specifications described in: https://en.bitcoin.it/wiki/Message_signing 
+        - Check message against address to confirm. 
+    """
+
+    # Freezing to get consistent results when testing 
+    random.seed(int.from_bytes(sha256(message).digest(), 'big')) 
+    
     # the order of the elliptic curve used in bitcoin
     n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
 
-    # double hash the message and convert to integer
     z = int.from_bytes(sha256(sha256(message).digest()).digest(), 'big')
 
     # generate a new secret/public key pair at random
@@ -54,7 +61,4 @@ def sign(secret_key: int, message: bytes) -> Signature:
     sig = Signature(r, s)
     return sig
 
-def verify(public_key: Point, message: bytes, sig: Signature) -> bool:
-    # just a stub for reference on how a signature would be verified in terms of the API
-    # we don't need to verify any signatures to craft a transaction, but we would if we were mining
-    pass
+
